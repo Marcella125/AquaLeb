@@ -1,5 +1,4 @@
 ﻿import type { CSSProperties } from "react";
-import Image from "next/image";
 import { ArrowUpRight, CloudRain, Droplet, FlaskConical, MapPin, Waves } from "lucide-react";
 import { AtlasMap } from "@/components/map/AtlasMap";
 import { ReservoirChart } from "@/components/dashboard/ReservoirChart";
@@ -23,7 +22,7 @@ function WaterTowerIcon({ size = 32 }: { size?: number }) {
 }
 
 function Brand({ inverse = false }: { inverse?: boolean }) {
-  return <a className={`atlas-brand${inverse ? " atlas-brand-inverse" : ""}`} href="#top" aria-label="AquaLeb home"><Image src={`${basePath}/logo.png`} alt="AquaLeb — Water for a brighter Lebanon" width={1881} height={836} priority={!inverse} unoptimized /></a>;
+  return <a className={`atlas-brand${inverse ? " atlas-brand-inverse" : ""}`} href="#top" aria-label="AquaLeb home"><span className="brand-drop"><Droplet size={30} strokeWidth={1.4} fill="currentColor" /></span><span>AquaLeb</span></a>;
 }
 
 export default function Home() {
