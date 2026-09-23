@@ -1,18 +1,20 @@
 "use client";
 
 import Image from "next/image";
-import { useState } from "react";
-import { ArrowRight, ArrowUpRight, AtSign, BookOpen, Globe2, MapPin, Menu, Plus, Search, Send } from "lucide-react";
+import { useState, type CSSProperties } from "react";
+import { ArrowRight, ArrowUpRight, BookOpen, MapPin, Menu, Plus, Search, Send } from "lucide-react";
 import { GovernorateMap } from "@/components/map/GovernorateMap";
 import { DATA_SOURCES, SECTOR_CONTEXT } from "@/data/governorate-water";
 
 export default function Home() {
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
+  const basePath = process.env.NEXT_PUBLIC_BASE_PATH ?? "";
+  const pageStyle = { "--atlas-hero-image": `url("${basePath}/aqualeb-coast-hero.png")` } as CSSProperties;
 
   return (
-    <main className="atlas-page" id="top">
+    <main className="atlas-page" id="top" style={pageStyle}>
       <header className="atlas-header">
-        <a href="#top" className="atlas-wordmark" aria-label="AquaLeb water atlas home"><Image src="/logo.png" width={220} height={90} alt="AquaLeb" priority /></a>
+        <a href="#top" className="atlas-wordmark" aria-label="AquaLeb water atlas home"><Image src={`${basePath}/logo.png`} width={220} height={90} alt="AquaLeb" priority /></a>
         <nav className="atlas-desktop-nav" aria-label="Primary navigation"><a href="#atlas">Water atlas</a><a href="#sources">Data sources</a><a href="#context">Sector context</a></nav>
         <div className="atlas-header-actions"><button type="button" aria-label="Search"><Search size={20} /></button><a href="#community"><Plus size={17} />Report a source</a><div className={`atlas-mobile-nav${mobileMenuOpen ? " is-open" : ""}`}><button type="button" aria-label="Open navigation" aria-expanded={mobileMenuOpen} onClick={() => setMobileMenuOpen((open) => !open)}><Menu size={21} /></button><nav aria-label="Mobile navigation"><a href="#atlas" onClick={() => setMobileMenuOpen(false)}>Water atlas</a><a href="#sources" onClick={() => setMobileMenuOpen(false)}>Data sources</a><a href="#context" onClick={() => setMobileMenuOpen(false)}>Sector context</a><a href="#community" onClick={() => setMobileMenuOpen(false)}>Report a source</a></nav></div></div>
       </header>
@@ -42,12 +44,12 @@ export default function Home() {
 
       <footer className="aqualeb-footer" id="community">
         <div className="footer-main">
-          <div className="footer-identity"><a href="#top" className="footer-logo"><Image src="/logo.png" width={220} height={90} alt="AquaLeb" /></a><p>Open water data for stronger communities<br />and a more resilient Lebanon.</p></div>
+          <div className="footer-identity"><a href="#top" className="footer-logo"><Image src={`${basePath}/logo.png`} width={220} height={90} alt="AquaLeb" /></a><p>Open water data for stronger communities<br />and a more resilient Lebanon.</p></div>
           <div className="footer-column"><strong>Explore</strong><a href="#atlas">Water atlas</a><a href="#sources">Data sources</a><a href="#context">Sector context</a></div>
           <div className="footer-column"><strong>Get involved</strong><a href="#community">Report a source</a><a href="mailto:hello@aqualeb.org">Partner with us</a><a href="mailto:hello@aqualeb.org">Contact</a></div>
           <div className="footer-cta"><span>Help improve Lebanon’s water picture</span><p>Share a verified source or community update with AquaLeb.</p><a href="mailto:hello@aqualeb.org">Report a source <Send size={16} /></a></div>
         </div>
-        <div className="footer-legal"><span>© 2026 AquaLeb · Water for a brighter Lebanon</span><p>Official indicators and community-contributed records remain clearly separated.</p><div><a href="#top" aria-label="AquaLeb website"><Globe2 size={16} /></a><a href="mailto:hello@aqualeb.org" aria-label="Email AquaLeb"><AtSign size={16} /></a></div></div>
+        <div className="footer-legal"><span>© 2026 AquaLeb · Water for a brighter Lebanon</span><p>Official indicators and community-contributed records remain clearly separated.</p></div>
       </footer>
     </main>
   );
