@@ -64,7 +64,6 @@ export default function Home() {
 
       <section className="harvest-section" id="harvest" aria-labelledby="harvest-title">
         <div className="harvest-content">
-          <p className="harvest-kicker">Rain today <span /> a brighter tomorrow</p>
           <h2 id="harvest-title">Every rooftop <em>has potential.</em></h2>
           <p className="harvest-lede">Estimate how much rainwater you can harvest and be part of a more resilient, water-secure Lebanon.</p>
 

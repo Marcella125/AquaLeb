@@ -252,8 +252,7 @@ h1,h2,h3,h4,h5,h6,.footer-brand,.footer-cta>span,.atlas-tooltip strong,.map-tool
 .harvest-section{min-height:720px;position:relative;padding:62px clamp(24px,5vw,78px) 108px;overflow:hidden;background-image:var(--harvest-image);background-size:cover;background-position:center;color:#082b50;isolation:isolate}
 .harvest-section:before{content:"";position:absolute;inset:0;z-index:-1;background:linear-gradient(90deg,rgba(245,251,255,.98) 0%,rgba(245,251,255,.94) 36%,rgba(245,251,255,.42) 59%,rgba(5,35,62,.08) 100%)}
 .harvest-content{width:min(770px,58vw)}
-.harvest-kicker{margin:0 0 12px;display:flex;align-items:center;gap:14px;color:#0876bb;font-size:10px;font-weight:800;letter-spacing:.28em;text-transform:uppercase}.harvest-kicker span{width:24px;height:1px;background:#42aee0}
-.harvest-section h2{margin:0;font-size:clamp(50px,4.7vw,77px);line-height:.95;letter-spacing:.005em}.harvest-section h2 em{color:#0877c8;font-style:normal}
+.harvest-section h2,.harvest-section h2 em{font-family:"Bebas Neue","Arial Narrow",Impact,sans-serif!important;font-weight:400}.harvest-section h2{margin:0;font-size:clamp(50px,4.7vw,77px);line-height:.95;letter-spacing:.005em}.harvest-section h2 em{color:#0877c8;font-style:normal}
 .harvest-lede{max-width:630px;margin:16px 0 26px;color:#315a78;font-size:15px;line-height:1.55}
 .harvest-tools{display:grid;grid-template-columns:minmax(275px,.82fr) minmax(330px,1.2fr);overflow:hidden;border:1px solid rgba(112,169,202,.3);border-radius:16px;box-shadow:0 22px 55px rgba(7,52,87,.16)}
 .harvest-form{padding:24px;background:rgba(255,255,255,.96);backdrop-filter:blur(12px)}.harvest-form h3{margin:0;color:#0a3e67;font-family:"Montserrat","Segoe UI",Arial,sans-serif!important;font-size:15px;font-weight:800}.harvest-form div>p{margin:4px 0 18px;color:#628097;font-size:10px}.harvest-form label{margin:0 0 7px;display:block;color:#173f61;font-size:10px;font-weight:800}.harvest-form select,.harvest-form input{width:100%;height:43px;margin:0 0 15px;padding:0 12px;color:#123d61;background:#fbfdff;border:1px solid #bdd7e7;border-radius:7px;outline:0;font-size:11px}.harvest-form select:focus,.harvest-form input:focus{border-color:#168fd0;box-shadow:0 0 0 3px rgba(22,143,208,.12)}.harvest-form button{width:100%;height:44px;margin-top:3px;border:0;border-radius:999px;display:flex;align-items:center;justify-content:center;gap:12px;color:#fff;background:linear-gradient(135deg,#139be7,#0864bd);box-shadow:0 9px 22px rgba(8,100,189,.2);font-size:11px;font-weight:800;cursor:pointer}.harvest-form small{margin-top:10px;display:block;color:#8094a3;font-size:8px;line-height:1.4}
@@ -268,7 +267,7 @@ h1,h2,h3,h4,h5,h6,.footer-brand,.footer-cta>span,.atlas-tooltip strong,.map-tool
 
 @media(max-width:700px){
   .harvest-section{padding:42px 16px 28px;background-position:70% center}.harvest-section:before{background:linear-gradient(180deg,rgba(245,251,255,.98) 0%,rgba(245,251,255,.94) 66%,rgba(6,45,75,.72) 100%)}
-  .harvest-content{width:100%}.harvest-kicker{gap:9px;font-size:8px;letter-spacing:.19em}.harvest-section h2{font-size:48px}.harvest-lede{margin:13px 0 20px;font-size:13px;line-height:1.48}
+  .harvest-content{width:100%}.harvest-section h2{font-size:48px}.harvest-lede{margin:13px 0 20px;font-size:13px;line-height:1.48}
   .harvest-tools{display:block;border-radius:14px}.harvest-form{padding:19px}.harvest-form h3{font-size:14px}.harvest-result{padding:22px 20px}.harvest-total strong{font-size:37px}.harvest-per-year{padding-left:58px}.harvest-result blockquote{font-size:12px}
   .harvest-benefits{position:relative;margin:22px -16px -28px;padding:18px 14px;grid-template-columns:1fr 1fr;gap:17px 8px}.harvest-benefits>div{justify-content:flex-start}.harvest-benefits span{font-size:9px}
 }
