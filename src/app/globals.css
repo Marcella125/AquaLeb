@@ -99,7 +99,7 @@ h1,h2,h3,.footer-brand,.footer-cta>span,.atlas-tooltip strong{font-family:"Bebas
 }
 
 @media(max-width:780px){
-  #atlas,#sources,#context,#community,.atlas-detail,.comparison-panel{scroll-margin-top:76px}
+  #atlas,#harvest,#sources,#context,#community,.atlas-detail,.comparison-panel{scroll-margin-top:76px}
   .atlas-header{box-shadow:0 5px 20px rgba(8,43,80,.07)}
   .atlas-wordmark,.atlas-wordmark img{width:150px}
   .atlas-header-actions{gap:2px}
@@ -271,3 +271,8 @@ h1,h2,h3,h4,h5,h6,.footer-brand,.footer-cta>span,.atlas-tooltip strong,.map-tool
   .harvest-tools{display:block;border-radius:14px}.harvest-form{padding:19px}.harvest-form h3{font-size:14px}.harvest-result{padding:22px 20px}.harvest-total strong{font-size:37px}.harvest-per-year{padding-left:58px}.harvest-result blockquote{font-size:12px}
   .harvest-benefits{position:relative;margin:22px -16px -28px;padding:18px 14px;grid-template-columns:1fr 1fr;gap:17px 8px}.harvest-benefits>div{justify-content:flex-start}.harvest-benefits span{font-size:9px}
 }
+
+/* Resources */
+.resources-section{padding:58px clamp(24px,5vw,76px) 68px;background:#f5fafc;border-top:1px solid #d7eaf3}.resources-heading{max-width:1420px;margin:0 auto}.resources-heading>p{margin:0 0 7px;color:#0878b7;font-size:9px;font-weight:800;letter-spacing:.18em;text-transform:uppercase}.resources-heading h2{margin:0;color:#082b50;font-size:clamp(42px,4vw,62px);line-height:.95}.resources-heading>span{display:block;max-width:620px;margin-top:9px;color:#587187;font-size:13px;line-height:1.55}.resources-section .method-grid{max-width:1420px;margin:24px auto 0;box-shadow:0 14px 34px rgba(8,43,80,.06)}
+
+@media(max-width:780px){.resources-section{padding:38px 16px 45px}.resources-heading h2{font-size:42px}.resources-heading>span{font-size:12px}.resources-section .method-grid{margin-top:18px}}
