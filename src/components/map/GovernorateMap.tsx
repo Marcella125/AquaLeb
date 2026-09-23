@@ -24,8 +24,10 @@ const noDataColor = "#e8e5dd";
 const mobileLabelOffsets: Partial<Record<GovernorateKey, [number, number]>> = {
   beirut: [-18, 0],
   mount_lebanon: [18, 0],
-  south_lebanon: [-12, 0],
-  nabatieh: [12, 0],
+  north_lebanon: [-12, -3],
+  baalbek_hermel: [14, 3],
+  south_lebanon: [-18, 0],
+  nabatieh: [18, 0],
 };
 
 function colorFor(value: number | undefined) {
@@ -40,7 +42,8 @@ function tooltipContent(key: GovernorateKey, metricKey: MetricKey) {
 
 function mobileValueContent(key: GovernorateKey, metricKey: MetricKey) {
   const value = METRICS[metricKey].values[key];
-  return `<div class="map-value-label">${value ? `${value.value.toFixed(1)}%` : "N/A"}</div>`;
+  const mapName = key === "north_lebanon" ? "North" : key === "south_lebanon" ? "South" : GOVERNORATES[key].name;
+  return `<div class="map-value-label"><span>${mapName}</span><b>${value ? `${value.value.toFixed(1)}%` : "N/A"}</b></div>`;
 }
 
 function DetailPanel({ governorateKey, metricKey }: { governorateKey: GovernorateKey | null; metricKey: MetricKey }) {
