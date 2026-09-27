@@ -5,8 +5,7 @@ import { AlignJustify, ArrowRight, CloudRain, Droplets, Gauge, Grid2X2, Info, La
 import { PlaceSearch } from "@/components/map/PlaceSearch";
 import type { PlaceRecord } from "@/data/places";
 import { MAX_ROOF_AREA_M2, MIN_ROOF_AREA_M2, ROOF_MATERIALS, type RoofMaterialKey } from "@/data/rainwater-harvesting";
-import { RAINFALL_BY_GOVERNORATE_KEY } from "@/data/governorate-rainfall";
-import { GOVERNORATES, type GovernorateKey } from "@/data/governorate-water";
+import { getRainfallAtCoordinate } from "@/data/lebanon-rainfall";
 import { calculateRainwaterEstimate, type RainwaterEstimate } from "@/lib/rainwater";
 
 const MATERIAL_ICONS = {
@@ -17,13 +16,6 @@ const MATERIAL_ICONS = {
 } as const;
 
 type CalculatorStatus = "ready" | "result" | "unavailable";
-
-function resolveGovernorateKey(place: PlaceRecord): GovernorateKey | null {
-  if (place.governorateKey) return place.governorateKey;
-  const normalizedGovernorate = place.governorate.trim().toLocaleLowerCase();
-  const match = (Object.entries(GOVERNORATES) as [GovernorateKey, (typeof GOVERNORATES)[GovernorateKey]][]).find(([, governorate]) => governorate.name.toLocaleLowerCase() === normalizedGovernorate);
-  return match?.[0] ?? null;
-}
 
 function Metric({ icon: Icon, label, value, note }: { icon: typeof Droplets; label: string; value: React.ReactNode; note: string }) {
   return <div className="harvest-metric"><span><Icon size={19} /></span><div><p>{label}</p><strong>{value}</strong><small>{note}</small></div></div>;
@@ -45,11 +37,11 @@ function ResultPanel({ estimate }: { estimate: RainwaterEstimate }) {
     <div className="harvest-result-hero">
       <p>Estimated annual harvest</p>
       <div><strong>{annualLitres.toLocaleString()}</strong><span>litres/year</span></div>
-      <small>Based on {estimate.rainfall.value.toLocaleString()} mm/year of annual rainfall for {estimate.rainfall.studyGeography}, a roof catchment area of {estimate.roof.areaM2.toLocaleString()} m² and the selected {estimate.roof.material.toLowerCase()} roof characteristics.</small>
+      <small>Based on {estimate.rainfall.value.toLocaleString()} mm/year ({estimate.rainfall.calculationBasis}) from the {estimate.rainfall.band} mm/year map band at this location, a roof catchment area of {estimate.roof.areaM2.toLocaleString()} m² and the selected {estimate.roof.material.toLowerCase()} roof characteristics.</small>
     </div>
 
     <div className="harvest-metrics-grid">
-      <Metric icon={CloudRain} label="Annual rainfall" value={<>{estimate.rainfall.value.toLocaleString()} <em>mm/year</em></>} note={`${estimate.rainfall.resolution} · Governorate value`} />
+      <Metric icon={CloudRain} label="Annual rainfall" value={<>{estimate.rainfall.value.toLocaleString()} <em>mm/year</em></>} note={`${estimate.rainfall.band} band · ${estimate.rainfall.calculationBasis}`} />
       <Metric icon={Ruler} label="Roof area" value={<>{estimate.roof.areaM2.toLocaleString()} <em>m²</em></>} note="Horizontal catchment" />
       <Metric icon={Gauge} label="Runoff coefficient" value={estimate.roof.runoffCoefficient.toFixed(2)} note={`${estimate.roof.material} roof`} />
       <Metric icon={Droplets} label="Annual harvest" value={<>{annualLitres.toLocaleString()} <em>L</em></>} note={`≈ ${estimate.result.cubicMetresPerYear.toLocaleString(undefined, { maximumFractionDigits: 1 })} m³`} />
@@ -57,7 +49,7 @@ function ResultPanel({ estimate }: { estimate: RainwaterEstimate }) {
 
     <div className="harvest-monthly-average"><span><Droplets size={18} /></span><div><p>Annualized monthly average</p><strong>{Math.round(estimate.result.annualizedMonthlyAverageLitres).toLocaleString()} L/month</strong><small>This is the annual estimate divided by 12 for planning only. Actual monthly collection varies with Lebanon&apos;s seasonal rainfall.</small></div></div>
 
-    <details className="harvest-analysis-details"><summary>View deeper analysis <ArrowRight size={15} /></summary><div><dl><div><dt>Location used</dt><dd>{estimate.location.name}, {estimate.location.governorate}</dd></div><div><dt>Coordinates</dt><dd>{estimate.location.coordinates.lat.toFixed(4)}° N · {estimate.location.coordinates.lng.toFixed(4)}° E</dd></div><div><dt>Rainfall geography</dt><dd>{estimate.rainfall.studyGeography}</dd></div><div><dt>Annual storage planning</dt><dd>{estimate.result.cubicMetresPerYear.toLocaleString(undefined, { maximumFractionDigits: 2 })} m³ before tank overflow and operational losses</dd></div></dl><p>Monthly or seasonal harvesting is not shown because the current AQUALEB source publishes annual values for these study geographies, not verified monthly values.</p></div></details>
+    <details className="harvest-analysis-details"><summary>View deeper analysis <ArrowRight size={15} /></summary><div><dl><div><dt>Location used</dt><dd>{estimate.location.name}, {estimate.location.governorate}</dd></div><div><dt>Coordinates</dt><dd>{estimate.location.coordinates.lat.toFixed(4)}° N · {estimate.location.coordinates.lng.toFixed(4)}° E</dd></div><div><dt>Published rainfall band</dt><dd>{estimate.rainfall.band} mm/year</dd></div><div><dt>Calculation value</dt><dd>{estimate.rainfall.value.toLocaleString()} mm/year · {estimate.rainfall.calculationBasis}</dd></div><div><dt>Annual storage planning</dt><dd>{estimate.result.cubicMetresPerYear.toLocaleString(undefined, { maximumFractionDigits: 2 })} m³ before tank overflow and operational losses</dd></div></dl><p>The source publishes mapped annual rainfall bands, not exact point or monthly values. AQUALEB uses the midpoint of each closed band and the lower bound of the open-ended &gt;1,400 mm band.</p></div></details>
 
   </div>;
 }
@@ -90,14 +82,10 @@ export function RainwaterCalculator() {
     const area = Number(roofArea);
     if (!selectedPlace) { setValidationMessage("Select a village, town or location in Lebanon."); return; }
     if (!Number.isFinite(area) || area < MIN_ROOF_AREA_M2 || area > MAX_ROOF_AREA_M2) { setValidationMessage(`Enter a roof area between ${MIN_ROOF_AREA_M2} and ${MAX_ROOF_AREA_M2.toLocaleString()} m².`); return; }
-    const governorateKey = resolveGovernorateKey(selectedPlace);
-    if (!governorateKey) { setValidationMessage("A governorate rainfall region could not be resolved for this location."); return; }
-
-    const nextEstimate = calculateRainwaterEstimate(selectedPlace, governorateKey, area, materialKey);
+    const nextEstimate = calculateRainwaterEstimate(selectedPlace, area, materialKey);
     setValidationMessage("");
     if (!nextEstimate) {
-      const governorate = GOVERNORATES[governorateKey].name;
-      setValidationMessage(`The published rainfall study does not provide a separate value for ${governorate}.`);
+      setValidationMessage("The selected coordinate falls outside the digitized rainfall zones in the published map.");
       setStatus("unavailable");
       return;
     }
@@ -106,8 +94,7 @@ export function RainwaterCalculator() {
     setStatus("result");
   };
 
-  const selectedGovernorateKey = selectedPlace ? resolveGovernorateKey(selectedPlace) : null;
-  const rainfallRecord = selectedGovernorateKey ? RAINFALL_BY_GOVERNORATE_KEY[selectedGovernorateKey] : null;
+  const rainfallRecord = selectedPlace ? getRainfallAtCoordinate(selectedPlace.lat, selectedPlace.lng) : null;
 
   return <section className="harvest-section" id="harvest" aria-labelledby="harvest-title">
     <div className="harvest-content">
@@ -140,8 +127,8 @@ export function RainwaterCalculator() {
         </form>
 
         <section className="harvest-output" aria-label="Rainwater harvesting analysis">
-          {status === "result" && estimate ? <ResultPanel estimate={estimate} /> : status === "unavailable" ? <div className="harvest-unavailable"><CloudRain size={30} /><p>Regional rainfall unavailable</p><h3>{validationMessage}</h3><small>AQUALEB does not fabricate a value when the published source does not report one.</small></div> : <ReadyPanel />}
-          {status === "ready" && selectedPlace && rainfallRecord?.annualMm != null && <div className="harvest-ready-context"><CloudRain size={15} /><span>{rainfallRecord.annualMm.toLocaleString()} mm/year · Governorate fallback for {rainfallRecord.studyGeography}</span></div>}
+          {status === "result" && estimate ? <ResultPanel estimate={estimate} /> : status === "unavailable" ? <div className="harvest-unavailable"><CloudRain size={30} /><p>Mapped rainfall unavailable</p><h3>{validationMessage}</h3><small>AQUALEB does not fabricate a value outside the digitized source map.</small></div> : <ReadyPanel />}
+          {status === "ready" && selectedPlace && rainfallRecord && <div className="harvest-ready-context"><CloudRain size={15} /><span>{rainfallRecord.label} mm/year · published map band at this coordinate</span></div>}
         </section>
       </div>
     </div>

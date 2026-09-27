@@ -27,7 +27,7 @@ export const SOURCE_REGISTRY: SourceRegistryRecord[] = [
     publisher: EXPLORER_SOURCES.rainfall.institution,
     url: EXPLORER_SOURCES.rainfall.url,
     powers: "Annual precipitation layers, location rainfall context and rainwater-harvesting estimates.",
-    coverage: `Lebanon published study geographies · ${EXPLORER_SOURCES.rainfall.year}`,
+    coverage: `Lebanon spatial rainfall zones · ${EXPLORER_SOURCES.rainfall.year}`,
     observationPeriod: EXPLORER_SOURCES.rainfall.year,
     geographicUnit: EXPLORER_SOURCES.rainfall.geographicResolution,
     resolutionOrScale: EXPLORER_SOURCES.rainfall.geographicResolution,
@@ -163,6 +163,6 @@ export const SOURCE_REGISTRY: SourceRegistryRecord[] = [
     resolutionOrScale: "Material-specific design coefficient",
     updateDate: "Source publication",
     limitation: ROOF_COEFFICIENT_SOURCE.note,
-    methodology: ["AQUALEB applies the selected material coefficient to the annual regional rainfall and horizontal roof catchment area.", ROOF_COEFFICIENT_SOURCE.note],
+    methodology: ["AQUALEB applies the selected material coefficient to the coordinate-matched rainfall band calculation value and horizontal roof catchment area.", ROOF_COEFFICIENT_SOURCE.note],
   },
 ];

@@ -1,6 +1,5 @@
-import { RAINFALL_BY_GOVERNORATE_KEY, RAINFALL_SOURCE } from "@/data/governorate-rainfall";
+import { getRainfallAtCoordinate, RAINFALL_SOURCE } from "@/data/lebanon-rainfall";
 import { ROOF_MATERIALS, type RoofMaterialKey } from "@/data/rainwater-harvesting";
-import { GOVERNORATES, type GovernorateKey } from "@/data/governorate-water";
 import type { PlaceRecord } from "@/data/places";
 
 export type RainwaterEstimate = {
@@ -14,8 +13,9 @@ export type RainwaterEstimate = {
     unit: "mm/year";
     source: typeof RAINFALL_SOURCE;
     referencePeriod: string;
-    resolution: "Regional data";
-    studyGeography: string;
+    resolution: "Spatial rainfall band";
+    band: string;
+    calculationBasis: "band midpoint" | "band lower bound";
   };
   roof: {
     areaM2: number;
@@ -30,9 +30,9 @@ export type RainwaterEstimate = {
   };
 };
 
-export function calculateRainwaterEstimate(place: PlaceRecord, governorateKey: GovernorateKey, areaM2: number, materialKey: RoofMaterialKey): RainwaterEstimate | null {
-  const rainfall = RAINFALL_BY_GOVERNORATE_KEY[governorateKey];
-  if (rainfall.annualMm == null) return null;
+export function calculateRainwaterEstimate(place: PlaceRecord, areaM2: number, materialKey: RoofMaterialKey): RainwaterEstimate | null {
+  const rainfall = getRainfallAtCoordinate(place.lat, place.lng);
+  if (!rainfall) return null;
 
   const material = ROOF_MATERIALS[materialKey];
   const litresPerYear = rainfall.annualMm * areaM2 * material.coefficient;
@@ -40,7 +40,7 @@ export function calculateRainwaterEstimate(place: PlaceRecord, governorateKey: G
   return {
     location: {
       name: place.name,
-      governorate: GOVERNORATES[governorateKey].name,
+      governorate: place.governorate,
       coordinates: { lat: place.lat, lng: place.lng },
     },
     rainfall: {
@@ -48,8 +48,9 @@ export function calculateRainwaterEstimate(place: PlaceRecord, governorateKey: G
       unit: "mm/year",
       source: RAINFALL_SOURCE,
       referencePeriod: RAINFALL_SOURCE.publication,
-      resolution: "Regional data",
-      studyGeography: rainfall.studyGeography,
+      resolution: "Spatial rainfall band",
+      band: rainfall.label,
+      calculationBasis: rainfall.calculationBasis,
     },
     roof: {
       areaM2,

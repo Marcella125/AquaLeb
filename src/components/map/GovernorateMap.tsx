@@ -2,12 +2,12 @@
 
 import { useCallback, useEffect, useRef, useState } from "react";
 import type { Feature, FeatureCollection, Geometry } from "geojson";
-import type { GeoJSON as LeafletGeoJSON, LatLngBounds, Layer, LeafletMouseEvent, Map as LeafletMap } from "leaflet";
+import type { GeoJSON as LeafletGeoJSON, ImageOverlay, LatLngBounds, Layer, LeafletMouseEvent, Map as LeafletMap } from "leaflet";
 import { Droplets, ExternalLink, Info, Layers3, Leaf, LoaderCircle, MapPinned, Sprout } from "lucide-react";
 import { AGRICULTURE_BY_GOVERNORATE, AGRICULTURE_CENSUS_SOURCE, AGRICULTURE_NATIONAL_TOTALS, AGRICULTURE_NO_DATA_COLOR, agricultureColor, agricultureLegend, agricultureValue, type AgricultureMetric } from "@/data/agriculture";
 import { EXPLORER_SOURCES, type DataSourceMetadata } from "@/data/data-sources";
 import { BOUNDARY_SOURCE, geoJsonNameToDataKey, GOVERNORATES, type GovernorateKey } from "@/data/governorate-water";
-import { RAINFALL_BY_GOVERNORATE_KEY, RAINFALL_SCALE, RAINFALL_UNAVAILABLE_COLOR, rainfallColor } from "@/data/governorate-rainfall";
+import { getRainfallAtCoordinate, RAINFALL_MAP_BOUNDS, RAINFALL_MAP_OVERLAY, RAINFALL_SCALE, type LocationRainfall } from "@/data/lebanon-rainfall";
 import { SOIL_CLASS_COLORS, SOIL_CLASS_ORDER, SOIL_LAYER_URL, soilColor, type SoilProperties } from "@/data/soil";
 import { findGovernorateKeyAtPoint, type GovernorateBoundaryProperties } from "@/lib/geo";
 
@@ -35,20 +35,19 @@ function governorateTooltip(key: GovernorateKey, layer: ExplorerLayer, metric: A
     const value = agricultureValue(key, metric);
     return `<div class="explorer-map-tooltip"><strong>${name}</strong><span>${metric === "uaa" ? "Utilized agricultural area" : "Irrigated area"}</span><b>${value === null ? "Not reported" : `${value.toLocaleString()} ha`}</b></div>`;
   }
-  const rainfall = RAINFALL_BY_GOVERNORATE_KEY[key];
-  return `<div class="explorer-map-tooltip"><strong>${name}</strong><span>Annual precipitation</span><b>${rainfall.annualMm === null ? "Not published separately" : `${rainfall.annualMm.toLocaleString()} mm/year`}</b></div>`;
+  return `<div class="explorer-map-tooltip"><strong>${name}</strong><span>Spatial rainfall map</span><b>Click a location to inspect its band</b></div>`;
 }
 
-function GovernorateDetails({ activeLayer, selectedKey, selectedSoil }: { activeLayer: ExplorerLayer; selectedKey: GovernorateKey | null; selectedSoil: SoilProperties | null }) {
+function GovernorateDetails({ activeLayer, selectedKey, selectedSoil, selectedRainfall, rainfallPoint }: { activeLayer: ExplorerLayer; selectedKey: GovernorateKey | null; selectedSoil: SoilProperties | null; selectedRainfall: LocationRainfall | null; rainfallPoint: { lat: number; lng: number } | null }) {
   const source = activeLayer === "water" ? EXPLORER_SOURCES.rainfall : activeLayer === "soil" ? EXPLORER_SOURCES.soil : AGRICULTURE_CENSUS_SOURCE;
   const governorate = selectedKey ? GOVERNORATES[selectedKey] : null;
-  const rainfall = selectedKey ? RAINFALL_BY_GOVERNORATE_KEY[selectedKey] : null;
   const agriculture = selectedKey ? AGRICULTURE_BY_GOVERNORATE[selectedKey] : null;
+  const hasSelection = activeLayer === "water" ? Boolean(rainfallPoint) : Boolean(governorate || selectedSoil);
 
   return <aside className={`explorer-detail explorer-detail-${activeLayer}`} aria-live="polite">
-    <header><span><MapPinned size={18} /></span><div><p>{activeLayer === "soil" && selectedSoil ? "Selected soil polygon" : "Selected governorate"}</p><h3>{activeLayer === "soil" && selectedSoil ? selectedSoil.soil_class || "Unclassified soil" : governorate?.name ?? "Select a governorate"}</h3>{governorate && <small>{governorate.name} · {governorate.pcode}</small>}</div></header>
-    {!governorate && !selectedSoil ? <div className="explorer-detail-empty"><strong>Explore the map</strong><p>Choose any governorate to inspect its supported data, source, period and status.</p></div> : <div key={`${activeLayer}-${selectedKey ?? "none"}-${selectedSoil?.objectid ?? "none"}`} className="explorer-detail-content">
-      {activeLayer === "water" && governorate && rainfall && <><section className="explorer-primary-stat"><span>Annual precipitation</span>{rainfall.annualMm === null ? <strong className="unavailable">Not available</strong> : <strong>{rainfall.annualMm.toLocaleString()} <small>mm/year</small></strong>}<p>{rainfall.category}</p></section><dl className="explorer-data-grid"><div><dt>Study geography</dt><dd>{rainfall.studyGeography}</dd></div><div><dt>Reference</dt><dd>2017 publication</dd></div><div><dt>Unit</dt><dd>Millimetres per year</dd></div><div><dt>Status</dt><dd>Published study value</dd></div></dl>{rainfall.annualMm === null && <div className="explorer-caution"><Info size={16} /><p>No separate value is published for {governorate.name}. AQUALEB does not estimate one.</p></div>}</>}
+    <header><span><MapPinned size={18} /></span><div><p>{activeLayer === "water" ? "Selected coordinate" : activeLayer === "soil" && selectedSoil ? "Selected soil polygon" : "Selected governorate"}</p><h3>{activeLayer === "water" ? governorate?.name ?? "Select a location" : activeLayer === "soil" && selectedSoil ? selectedSoil.soil_class || "Unclassified soil" : governorate?.name ?? "Select a governorate"}</h3>{activeLayer === "water" && rainfallPoint ? <small>{rainfallPoint.lat.toFixed(4)}° N · {rainfallPoint.lng.toFixed(4)}° E</small> : governorate && <small>{governorate.name} · {governorate.pcode}</small>}</div></header>
+    {!hasSelection ? <div className="explorer-detail-empty"><strong>Explore the map</strong><p>{activeLayer === "water" ? "Click anywhere inside Lebanon to inspect the published rainfall band at that coordinate." : "Choose any governorate to inspect its supported data, source, period and status."}</p></div> : <div key={`${activeLayer}-${selectedKey ?? "none"}-${selectedSoil?.objectid ?? "none"}-${rainfallPoint?.lat ?? "none"}`} className="explorer-detail-content">
+      {activeLayer === "water" && rainfallPoint && <>{selectedRainfall ? <><section className="explorer-primary-stat"><span>Annual precipitation band</span><strong>{selectedRainfall.label} <small>mm/year</small></strong><p>Published spatial band at the selected coordinate</p></section><dl className="explorer-data-grid"><div><dt>Calculation value</dt><dd>{selectedRainfall.annualMm.toLocaleString()} mm/year</dd></div><div><dt>Calculation basis</dt><dd>{selectedRainfall.calculationBasis}</dd></div><div><dt>Reference</dt><dd>VertigO Figure 3 · 2023</dd></div><div><dt>Underlying atlas</dt><dd>Atlas climatique du Liban · 1977</dd></div></dl></> : <section className="explorer-primary-stat"><span>Annual precipitation</span><strong className="unavailable">Outside mapped zones</strong><p>No rainfall band was digitized at this coordinate.</p></section>}</>}
       {activeLayer === "agriculture" && governorate && <>{agriculture ? <div className="agriculture-detail-values"><section><span>Utilized agricultural area</span><strong>{agriculture.utilizedAgriculturalAreaHa.toLocaleString()} <small>ha</small></strong></section><section><span>Irrigated area</span><strong>{agriculture.irrigatedAreaHa.toLocaleString()} <small>ha</small></strong></section></div> : <section className="explorer-primary-stat"><span>Agricultural census</span><strong className="unavailable">Not reported</strong><p>No value is assigned to {governorate.name} in the supplied governorate table.</p></section>}<dl className="explorer-data-grid"><div><dt>Reference period</dt><dd>2010/11</dd></div><div><dt>Unit</dt><dd>Hectares</dd></div><div><dt>Institution</dt><dd>Ministry of Agriculture / FAO</dd></div><div><dt>Status</dt><dd>Official census</dd></div></dl></>}
       {activeLayer === "soil" && <>{selectedSoil ? <><section className="explorer-primary-stat"><span>Published soil class</span><strong>{selectedSoil.soil_class || "Unclassified"}</strong><p>Mapped polygon · not a governorate-wide classification</p></section><dl className="explorer-data-grid">{selectedSoil.soil_group && <div><dt>Soil group</dt><dd>{selectedSoil.soil_group}</dd></div>}{selectedSoil.soil_unit && <div><dt>Soil unit</dt><dd>{selectedSoil.soil_unit}</dd></div>}{selectedSoil.code2 && <div><dt>Published code</dt><dd>{selectedSoil.code2}</dd></div>}<div><dt>Map scale</dt><dd>1:50,000</dd></div></dl></> : <section className="explorer-primary-stat"><span>Soil classifications</span><strong className="unavailable">Select a polygon</strong><p>Choose a colored soil polygon to inspect its published attributes.</p></section>}</>}
       <div className={`explorer-source-status status-${source.status}`}>{sourceStatus(source)}</div>
@@ -59,7 +58,7 @@ function GovernorateDetails({ activeLayer, selectedKey, selectedSoil }: { active
 function NationalSummary({ activeLayer, agricultureMetric }: { activeLayer: ExplorerLayer; agricultureMetric: AgricultureMetric }) {
   if (activeLayer === "agriculture") return <div className="explorer-national-stats" key={`${activeLayer}-${agricultureMetric}`}><div><strong>{AGRICULTURE_NATIONAL_TOTALS.utilizedAgriculturalAreaHa.toLocaleString()} ha</strong><span>Utilized agricultural area</span></div><div><strong>{AGRICULTURE_NATIONAL_TOTALS.irrigatedAreaHa.toLocaleString()} ha</strong><span>Irrigated area</span></div><div><strong>7</strong><span>Census governorate groupings</span></div><div><strong>2010/11</strong><span>Official census</span></div></div>;
   if (activeLayer === "soil") return <div className="explorer-national-stats" key={activeLayer}><div><strong>{SOIL_CLASS_ORDER.length}</strong><span>Published map classes</span></div><div><strong>1:50,000</strong><span>Map scale</span></div><div><strong>27</strong><span>Source map sheets</span></div><div><strong>CNRS</strong><span>Remote Sensing Center</span></div></div>;
-  return <div className="explorer-national-stats" key={activeLayer}><div><strong>Annual precipitation</strong><span>Active comparison indicator</span></div><div><strong>mm/year</strong><span>Published unit</span></div><div><strong>2017</strong><span>Published study reference</span></div><div><strong>MEW 2024–35</strong><span>Official national sector context</span></div></div>;
+  return <div className="explorer-national-stats" key={activeLayer}><div><strong>13 bands</strong><span>Published rainfall classes</span></div><div><strong>200–&gt;1,400</strong><span>mm/year range</span></div><div><strong>Figure 3</strong><span>VertigO 2023 publication</span></div><div><strong>1977 atlas</strong><span>Underlying climate data</span></div></div>;
 }
 
 export function GovernorateMap() {
@@ -68,6 +67,7 @@ export function GovernorateMap() {
   const boundsRef = useRef<LatLngBounds | null>(null);
   const boundaryLayerRef = useRef<LeafletGeoJSON | null>(null);
   const soilLayerRef = useRef<LeafletGeoJSON | null>(null);
+  const rainfallOverlayRef = useRef<ImageOverlay | null>(null);
   const polygonRefs = useRef(new Map<GovernorateKey, StyledLayer>());
   const boundaryFeaturesRef = useRef<Feature<Geometry, GovernorateProperties>[]>([]);
   const requestRef = useRef<AbortController | null>(null);
@@ -79,6 +79,8 @@ export function GovernorateMap() {
   const [agricultureMetric, setAgricultureMetric] = useState<AgricultureMetric>("uaa");
   const [selectedKey, setSelectedKey] = useState<GovernorateKey | null>(null);
   const [selectedSoil, setSelectedSoil] = useState<SoilProperties | null>(null);
+  const [selectedRainfall, setSelectedRainfall] = useState<LocationRainfall | null>(null);
+  const [rainfallPoint, setRainfallPoint] = useState<{ lat: number; lng: number } | null>(null);
   const [boundaryError, setBoundaryError] = useState(false);
   const [soilStatus, setSoilStatus] = useState<"idle" | "loading" | "ready" | "empty" | "error">("idle");
   const [soilCount, setSoilCount] = useState(0);
@@ -146,8 +148,11 @@ export function GovernorateMap() {
       mapRef.current = map;
       map.attributionControl.setPrefix(false);
       map.attributionControl.addAttribution(`Boundaries: <a href="${BOUNDARY_SOURCE.url}" target="_blank" rel="noreferrer">OCHA Lebanon</a>`);
+      map.attributionControl.addAttribution(`Rainfall: <a href="${EXPLORER_SOURCES.rainfall.url}" target="_blank" rel="noreferrer">Karam &amp; Adjizian Gérard, VertigO (2023), Figure 3</a>`);
+      const rainfallOverlay = L.imageOverlay(`${basePath}${RAINFALL_MAP_OVERLAY}`, [[RAINFALL_MAP_BOUNDS.south, RAINFALL_MAP_BOUNDS.west], [RAINFALL_MAP_BOUNDS.north, RAINFALL_MAP_BOUNDS.east]], { opacity: .9, interactive: false }).addTo(map);
+      rainfallOverlayRef.current = rainfallOverlay;
       const boundaryLayer = L.geoJSON(boundaries, {
-        style: (feature) => { const name = feature?.properties?.admin1Name; const key = name ? geoJsonNameToDataKey[name] : undefined; return { color: "#f8fbfc", weight: 1.35, fillColor: key ? rainfallColor(RAINFALL_BY_GOVERNORATE_KEY[key].annualMm) : RAINFALL_UNAVAILABLE_COLOR, fillOpacity: .92 }; },
+        style: () => ({ color: "rgba(255,255,255,.8)", weight: 1.2, fillColor: "#fff", fillOpacity: .03 }),
         onEachFeature: (feature: Feature<Geometry, GovernorateProperties>, layer: Layer) => {
           const sourceName = feature.properties?.admin1Name;
           if (!sourceName || !(sourceName in geoJsonNameToDataKey)) return;
@@ -155,7 +160,7 @@ export function GovernorateMap() {
           const vector = layer as StyledLayer;
           polygonIndex.set(key, vector);
           layer.bindTooltip(() => governorateTooltip(key, activeLayerRef.current, agricultureMetricRef.current), { className: "water-tooltip", direction: "top", sticky: true });
-          layer.on({ mouseover: () => { if (activeLayerRef.current === "soil") return; vector.setStyle({ weight: 2.4, color: "#fff", fillOpacity: 1 }); vector.bringToFront(); }, mouseout: () => { if (activeLayerRef.current === "soil") return; const selected = selectedKeyRef.current === key; vector.setStyle({ weight: selected ? 3.2 : 1.35, color: selected ? "#f3b45b" : "#f8fbfc", fillOpacity: selected ? 1 : .92 }); }, click: () => { if (activeLayerRef.current !== "soil") selectGovernorate(key); } });
+          layer.on({ mouseover: () => { if (activeLayerRef.current === "soil") return; vector.setStyle({ weight: 2.4, color: "#fff", fillOpacity: activeLayerRef.current === "water" ? .08 : 1 }); vector.bringToFront(); }, mouseout: () => { if (activeLayerRef.current === "soil") return; const selected = selectedKeyRef.current === key; vector.setStyle({ weight: selected ? 3.2 : 1.35, color: selected ? "#f3b45b" : "#f8fbfc", fillOpacity: activeLayerRef.current === "water" ? selected ? .1 : .03 : selected ? 1 : .92 }); }, click: (event: LeafletMouseEvent) => { if (activeLayerRef.current === "soil") return; selectGovernorate(key); if (activeLayerRef.current === "water") { const point = { lat: event.latlng.lat, lng: event.latlng.lng }; setRainfallPoint(point); setSelectedRainfall(getRainfallAtCoordinate(point.lat, point.lng)); } } });
           layer.on("add", () => { const path = vector.getElement?.(); if (!path) return; path.setAttribute("tabindex", "0"); path.setAttribute("role", "button"); path.setAttribute("aria-label", `Select ${GOVERNORATES[key].name}`); path.addEventListener("keydown", (event) => { if ((event.key === "Enter" || event.key === " ") && activeLayerRef.current !== "soil") { event.preventDefault(); selectGovernorate(key); } }); });
         },
       }).addTo(map);
@@ -168,7 +173,7 @@ export function GovernorateMap() {
       map.once("unload", () => resizeObserver.disconnect());
     }
     createMap().catch(() => { if (!disposed) setBoundaryError(true); });
-    return () => { disposed = true; requestRef.current?.abort(); if (removeSoilTimer.current) clearTimeout(removeSoilTimer.current); mapRef.current?.remove(); mapRef.current = null; boundaryLayerRef.current = null; soilLayerRef.current = null; polygonIndex.clear(); };
+    return () => { disposed = true; requestRef.current?.abort(); if (removeSoilTimer.current) clearTimeout(removeSoilTimer.current); mapRef.current?.remove(); mapRef.current = null; boundaryLayerRef.current = null; soilLayerRef.current = null; rainfallOverlayRef.current = null; polygonIndex.clear(); };
   }, [selectGovernorate]);
 
   useEffect(() => {
@@ -178,10 +183,11 @@ export function GovernorateMap() {
     for (const [key, polygon] of polygonRefs.current) {
       const selected = key === selectedKey;
       const value = agricultureValue(key, agricultureMetric);
-      const fillColor = activeLayer === "water" ? rainfallColor(RAINFALL_BY_GOVERNORATE_KEY[key].annualMm) : activeLayer === "agriculture" ? agricultureColor(value, agricultureMetric) : "#263f43";
-      polygon.setStyle({ color: selected ? "#f3b45b" : activeLayer === "soil" ? "rgba(255,255,255,.42)" : "#f8fbfc", weight: selected ? 3.2 : activeLayer === "soil" ? .8 : 1.35, fillColor, fillOpacity: activeLayer === "soil" ? .14 : selected ? 1 : .92 });
+      const fillColor = activeLayer === "agriculture" ? agricultureColor(value, agricultureMetric) : activeLayer === "soil" ? "#263f43" : "#fff";
+      polygon.setStyle({ color: selected ? "#f3b45b" : activeLayer === "soil" ? "rgba(255,255,255,.42)" : "#f8fbfc", weight: selected ? 3.2 : activeLayer === "soil" ? .8 : 1.35, fillColor, fillOpacity: activeLayer === "water" ? selected ? .1 : .03 : activeLayer === "soil" ? .14 : selected ? 1 : .92 });
       if (selected) polygon.bringToFront();
     }
+    rainfallOverlayRef.current?.setOpacity(activeLayer === "water" ? .9 : 0);
     if (activeLayer === "soil") queueMicrotask(() => void loadSoils());
     else {
       requestRef.current?.abort();
@@ -204,7 +210,7 @@ export function GovernorateMap() {
     });
   }, [selectedKey, selectedSoil]);
 
-  const layerDescription = activeLayer === "water" ? "Annual precipitation by supported study geography" : activeLayer === "soil" ? "Published CNRS soil classifications and spatial distribution" : "Official utilized and irrigated agricultural area";
+  const layerDescription = activeLayer === "water" ? "Mean annual rainfall bands at coordinate level" : activeLayer === "soil" ? "Published CNRS soil classifications and spatial distribution" : "Official utilized and irrigated agricultural area";
   const activeSource = activeLayer === "water" ? EXPLORER_SOURCES.rainfall : activeLayer === "soil" ? EXPLORER_SOURCES.soil : AGRICULTURE_CENSUS_SOURCE;
 
   return <div className={`lebanon-explorer layer-${activeLayer}`}>
@@ -218,12 +224,12 @@ export function GovernorateMap() {
         {activeLayer === "soil" && soilStatus === "loading" && <div className="explorer-map-loading" role="status"><LoaderCircle size={18} className="spin" />Loading published soil polygons</div>}
         {activeLayer === "soil" && soilStatus === "error" && <div className="explorer-map-message" role="alert"><Info size={22} /><strong>Soil service unavailable</strong><span>The live AUB-hosted layer could not be reached.</span><button type="button" onClick={() => void loadSoils()}>Retry</button></div>}
         {activeLayer === "soil" && soilStatus === "empty" && <div className="explorer-map-message"><Sprout size={22} /><strong>No soil polygons returned</strong></div>}
-        {activeLayer === "water" && <div className="explorer-legend"><div className="legend-heading"><span>Annual precipitation</span><strong>mm/year</strong></div><div className="water-legend-ramp">{RAINFALL_SCALE.map((item) => <span key={item.annualMm}><i style={{ background: item.color }} />{item.annualMm.toLocaleString()}</span>)}</div><small><i style={{ background: RAINFALL_UNAVAILABLE_COLOR }} />Not published separately</small></div>}
+        {activeLayer === "water" && <div className="explorer-legend"><div className="legend-heading"><span>Mean annual rainfall</span><strong>mm/year</strong></div><div className="water-legend-ramp">{RAINFALL_SCALE.map((item) => <span key={item.label}><i style={{ background: item.color }} />{item.label}</span>)}</div><small>VertigO Figure 3 · coordinate-matched bands</small></div>}
         {activeLayer === "agriculture" && <div className="explorer-legend"><div className="legend-heading"><span>{agricultureMetric === "uaa" ? "Utilized agricultural area" : "Irrigated area"}</span><strong>hectares</strong></div><div className="agriculture-legend-ramp">{agricultureLegend(agricultureMetric).map((item, index, scale) => <span key={item.max}><i style={{ background: item.color }} />{index === 0 ? `≤ ${item.max.toLocaleString()}` : Number.isFinite(item.max) ? `≤ ${item.max.toLocaleString()}` : `> ${scale[index - 1].max.toLocaleString()}`}</span>)}</div><small><i style={{ background: AGRICULTURE_NO_DATA_COLOR }} />Not reported</small></div>}
         {activeLayer === "soil" && <div className="explorer-legend soil"><div className="legend-heading"><span>Soil Types</span><strong>Published classes</strong></div><div>{SOIL_CLASS_ORDER.map((name) => <span key={name}><i style={{ background: SOIL_CLASS_COLORS[name] }} />{name}</span>)}</div></div>}
         <div className="explorer-map-source"><span>{activeLayer === "water" ? "Published study" : activeLayer === "soil" ? `${soilCount || "—"} mapped polygons` : "Official census"}</span><a href={activeSource.url} target="_blank" rel="noreferrer">View source <ExternalLink size={12} /></a></div>
       </div>
-      <GovernorateDetails activeLayer={activeLayer} selectedKey={selectedKey} selectedSoil={selectedSoil} />
+      <GovernorateDetails activeLayer={activeLayer} selectedKey={selectedKey} selectedSoil={selectedSoil} selectedRainfall={selectedRainfall} rainfallPoint={rainfallPoint} />
     </div>
     <NationalSummary activeLayer={activeLayer} agricultureMetric={agricultureMetric} />
     <p className="explorer-boundary-credit">Administrative boundaries: <a href={BOUNDARY_SOURCE.url} target="_blank" rel="noreferrer">{BOUNDARY_SOURCE.publisher}</a>. Data layers retain their original source geography and limitations.</p>

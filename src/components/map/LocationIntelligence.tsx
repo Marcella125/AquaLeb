@@ -6,7 +6,7 @@ import { Check, Droplets, Layers3, Leaf, LoaderCircle, MapPin, Search } from "lu
 import { PlaceSearch } from "@/components/map/PlaceSearch";
 import { AGRICULTURE_BY_GOVERNORATE } from "@/data/agriculture";
 import { GOVERNORATES, type GovernorateKey } from "@/data/governorate-water";
-import { RAINFALL_BY_GOVERNORATE_KEY } from "@/data/governorate-rainfall";
+import { getRainfallAtCoordinate } from "@/data/lebanon-rainfall";
 import type { PlaceRecord } from "@/data/places";
 import { SOIL_LAYER_URL, type SoilProperties } from "@/data/soil";
 import { findGovernorateKeyAtPoint, type GovernorateBoundaryProperties } from "@/lib/geo";
@@ -32,7 +32,7 @@ function AnalysisState({ name, phase }: { name: string; phase: AnalysisPhase }) 
 
 function EnvironmentalProfile({ place, governorateKey, soil, soilUnavailable }: { place: PlaceRecord; governorateKey: GovernorateKey | null; soil: SoilProperties | null; soilUnavailable: boolean }) {
   const governorate = governorateKey ? GOVERNORATES[governorateKey] : null;
-  const rainfall = governorateKey ? RAINFALL_BY_GOVERNORATE_KEY[governorateKey] : null;
+  const rainfall = getRainfallAtCoordinate(place.lat, place.lng);
   const agriculture = governorateKey ? AGRICULTURE_BY_GOVERNORATE[governorateKey] : null;
 
   return <div className="environment-report" aria-live="polite">
@@ -45,7 +45,7 @@ function EnvironmentalProfile({ place, governorateKey, soil, soilUnavailable }: 
     <section className="environment-overview" aria-labelledby="environment-overview-title">
       <div><p>Environmental overview</p><h4 id="environment-overview-title">Available context for {place.name}</h4></div>
       <dl>
-        <div><dt>Annual rainfall</dt><dd>{rainfall?.annualMm != null ? `${rainfall.annualMm.toLocaleString()} mm/year` : "Not available"}</dd></div>
+        <div><dt>Annual rainfall</dt><dd>{rainfall ? `${rainfall.label} mm/year` : "Not available"}</dd></div>
         <div><dt>Mapped soil</dt><dd>{soil?.soil_class || "Not available"}</dd></div>
         <div><dt>Agricultural context</dt><dd>{agriculture && governorate ? governorate.name : "Not available"}</dd></div>
       </dl>
@@ -53,11 +53,11 @@ function EnvironmentalProfile({ place, governorateKey, soil, soilUnavailable }: 
 
     <div className="environment-report-sections">
       <section className="environment-report-section">
-        <header><span className="report-icon water"><Droplets size={17} /></span><div><p>Regional data</p><h4>Water &amp; Rainfall</h4></div></header>
+        <header><span className="report-icon water"><Droplets size={17} /></span><div><p>Spatial data</p><h4>Water &amp; Rainfall</h4></div></header>
         <div className="environment-report-rows">
-          <ReportRow label="Annual precipitation">{rainfall?.annualMm != null ? `${rainfall.annualMm.toLocaleString()} mm/year` : "Data not available at this resolution"}</ReportRow>
-          <ReportRow label="Data resolution">Regional rainfall context</ReportRow>
-          <ReportRow label="Study geography">{rainfall?.studyGeography || "Not published for this governorate"}</ReportRow>
+          <ReportRow label="Annual precipitation">{rainfall ? `${rainfall.label} mm/year` : "Data not available at this coordinate"}</ReportRow>
+          <ReportRow label="Data resolution">Published spatial rainfall band</ReportRow>
+          <ReportRow label="Calculation value">{rainfall ? `${rainfall.annualMm.toLocaleString()} mm/year · ${rainfall.calculationBasis}` : "Not available"}</ReportRow>
         </div>
       </section>
 
