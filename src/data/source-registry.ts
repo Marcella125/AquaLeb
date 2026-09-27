@@ -1,6 +1,8 @@
 import { LAND_COVER_SOURCE } from "@/data/agriculture";
+import { EXPLORER_SOURCES } from "@/data/data-sources";
 import { BOUNDARY_SOURCE, DATA_SOURCES } from "@/data/governorate-water";
 import { GEONAMES_SOURCE } from "@/data/places";
+import { ROOF_COEFFICIENT_SOURCE } from "@/data/rainwater-harvesting";
 import { SOIL_SOURCE } from "@/data/soil";
 
 export type SourceRegistryRecord = {
@@ -19,6 +21,20 @@ export type SourceRegistryRecord = {
 };
 
 export const SOURCE_REGISTRY: SourceRegistryRecord[] = [
+  {
+    key: "rainfall-harvesting",
+    dataset: EXPLORER_SOURCES.rainfall.dataset,
+    publisher: EXPLORER_SOURCES.rainfall.institution,
+    url: EXPLORER_SOURCES.rainfall.url,
+    powers: "Annual precipitation layers, location rainfall context and rainwater-harvesting estimates.",
+    coverage: `Lebanon published study geographies · ${EXPLORER_SOURCES.rainfall.year}`,
+    observationPeriod: EXPLORER_SOURCES.rainfall.year,
+    geographicUnit: EXPLORER_SOURCES.rainfall.geographicResolution,
+    resolutionOrScale: EXPLORER_SOURCES.rainfall.geographicResolution,
+    updateDate: EXPLORER_SOURCES.rainfall.year,
+    limitation: EXPLORER_SOURCES.rainfall.administrativeLimitations,
+    methodology: [EXPLORER_SOURCES.rainfall.methodology, EXPLORER_SOURCES.rainfall.transformation],
+  },
   {
     key: "water-lfhlcs",
     dataset: DATA_SOURCES.lfhlcs_2018_19.title,
@@ -71,6 +87,20 @@ export const SOURCE_REGISTRY: SourceRegistryRecord[] = [
     ],
   },
   {
+    key: "agriculture-census",
+    dataset: EXPLORER_SOURCES.agriculture.dataset,
+    publisher: EXPLORER_SOURCES.agriculture.institution,
+    url: EXPLORER_SOURCES.agriculture.url,
+    powers: "Governorate agricultural-area and irrigated-area context across AQUALEB.",
+    coverage: `Seven census governorate groupings · ${EXPLORER_SOURCES.agriculture.year}`,
+    observationPeriod: EXPLORER_SOURCES.agriculture.year,
+    geographicUnit: EXPLORER_SOURCES.agriculture.geographicResolution,
+    resolutionOrScale: EXPLORER_SOURCES.agriculture.geographicResolution,
+    updateDate: EXPLORER_SOURCES.agriculture.year,
+    limitation: EXPLORER_SOURCES.agriculture.administrativeLimitations,
+    methodology: [EXPLORER_SOURCES.agriculture.methodology, EXPLORER_SOURCES.agriculture.transformation],
+  },
+  {
     key: "soil",
     dataset: SOIL_SOURCE.title,
     publisher: `${SOIL_SOURCE.publisher}; hosted by ${SOIL_SOURCE.host}`,
@@ -120,5 +150,19 @@ export const SOURCE_REGISTRY: SourceRegistryRecord[] = [
       "Geographic unit: a named-place point coordinate, not a village boundary.",
       `The local search index includes Lebanese place names, alternate spellings and WGS84 coordinates from the bundled extract. License: ${GEONAMES_SOURCE.license}.`,
     ],
+  },
+  {
+    key: "roof-coefficients",
+    dataset: ROOF_COEFFICIENT_SOURCE.title,
+    publisher: ROOF_COEFFICIENT_SOURCE.publisher,
+    url: ROOF_COEFFICIENT_SOURCE.url,
+    powers: "Roof-material runoff coefficients used by the rainwater-harvesting calculator.",
+    coverage: "Published design ranges for common catchment surfaces",
+    observationPeriod: "Published technical guidance",
+    geographicUnit: "Roof and hard-surface material type",
+    resolutionOrScale: "Material-specific design coefficient",
+    updateDate: "Source publication",
+    limitation: ROOF_COEFFICIENT_SOURCE.note,
+    methodology: ["AQUALEB applies the selected material coefficient to the annual regional rainfall and horizontal roof catchment area.", ROOF_COEFFICIENT_SOURCE.note],
   },
 ];

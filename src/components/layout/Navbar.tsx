@@ -16,7 +16,6 @@ export function Navbar() {
       </nav>
       <div className="nav-actions">
         <label className="search"><Search size={16} /><input aria-label="Search" placeholder="Search places or water data" /></label>
-        <button className="language" type="button">EN <span>/</span> عربي</button>
         <button className="sign-in" type="button">Sign in <ArrowUpRight size={16} /></button>
         <button className="menu-button" aria-label="Open menu" type="button"><Menu /></button>
       </div>
