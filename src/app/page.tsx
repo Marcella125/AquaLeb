@@ -86,8 +86,8 @@ export default function Home() {
       <footer className="aqualeb-footer" id="community">
         <div className="footer-main">
           <div className="footer-identity"><a href="#top" className="footer-logo"><Image className="brand-logo-base" src={`${basePath}/logo.png`} width={220} height={90} alt="AquaLeb" /></a><p>Open water data for stronger communities<br />and a more resilient Lebanon.</p></div>
-          <div className="footer-column"><strong>Explore</strong><a href="#atlas">Water atlas</a><a href="#harvest">Rainwater potential</a><a href="#sources">Data &amp; Sources</a></div>
-          <div className="footer-column"><strong>Get involved</strong><a href="#community">Report a source</a><a href="mailto:hello@aqualeb.org">Partner with us</a><a href="mailto:hello@aqualeb.org">Contact</a></div>
+          <div className="footer-column"><strong>Explore</strong><a href="#top">Home</a><a href="#atlas">Map &amp; Data</a><a href="#location-intelligence">Location Intelligence</a></div>
+          <div className="footer-column"><strong>Resources</strong><a href="#harvest">Rainwater Calculator</a><a href="#sources">Data &amp; Sources</a><a href="#sources">About AQUALEB</a></div>
           <div className="footer-cta"><span>Help improve Lebanon’s water picture</span><p>Share a verified source or community update with AquaLeb.</p><a href="mailto:hello@aqualeb.org">Report a source <Send size={16} /></a></div>
         </div>
         <div className="footer-legal"><span>© 2026 AquaLeb · Water for a brighter Lebanon</span><p>Official indicators and community-contributed records remain clearly separated.</p></div>

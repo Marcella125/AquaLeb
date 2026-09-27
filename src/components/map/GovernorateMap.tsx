@@ -3,7 +3,7 @@
 import { useCallback, useEffect, useRef, useState } from "react";
 import type { Feature, FeatureCollection, Geometry } from "geojson";
 import type { GeoJSON as LeafletGeoJSON, LatLngBounds, Layer, LeafletMouseEvent, Map as LeafletMap } from "leaflet";
-import { Droplets, ExternalLink, Info, Layers3, Leaf, LoaderCircle, MapPinned, RotateCcw, Sprout } from "lucide-react";
+import { Droplets, ExternalLink, Info, Layers3, Leaf, LoaderCircle, MapPinned, Sprout } from "lucide-react";
 import { AGRICULTURE_BY_GOVERNORATE, AGRICULTURE_CENSUS_SOURCE, AGRICULTURE_NATIONAL_TOTALS, AGRICULTURE_NO_DATA_COLOR, agricultureColor, agricultureLegend, agricultureValue, type AgricultureMetric } from "@/data/agriculture";
 import { EXPLORER_SOURCES, type DataSourceMetadata } from "@/data/data-sources";
 import { BOUNDARY_SOURCE, geoJsonNameToDataKey, GOVERNORATES, type GovernorateKey } from "@/data/governorate-water";
@@ -85,8 +85,6 @@ export function GovernorateMap() {
 
   const selectGovernorate = useCallback((key: GovernorateKey) => { selectedKeyRef.current = key; setSelectedKey(key); }, []);
   const findGovernorate = useCallback((lat: number, lng: number) => findGovernorateKeyAtPoint(boundaryFeaturesRef.current, lat, lng) ?? undefined, []);
-  const resetLebanon = useCallback(() => { if (mapRef.current && boundsRef.current) mapRef.current.fitBounds(boundsRef.current, { padding: [34, 34], maxZoom: 8.5 }); }, []);
-
   const loadSoils = useCallback(async () => {
     const map = mapRef.current;
     if (!map || activeLayerRef.current !== "soil" || soilLayerRef.current) return;
@@ -216,7 +214,6 @@ export function GovernorateMap() {
         <div className="explorer-map-heading"><div><span>Active layer</span><strong>{LAYER_OPTIONS.find((item) => item.key === activeLayer)?.label}</strong></div><p>{layerDescription}</p></div>
         {activeLayer === "agriculture" && <div className="agriculture-metric-toggle" role="group" aria-label="Agriculture metric"><button type="button" className={agricultureMetric === "uaa" ? "active" : ""} onClick={() => setAgricultureMetric("uaa")}>Utilized Agricultural Area</button><button type="button" className={agricultureMetric === "irrigated" ? "active" : ""} onClick={() => setAgricultureMetric("irrigated")}>Irrigated Area</button></div>}
         <div ref={mapElement} className="explorer-leaflet-map" aria-label={`Interactive Lebanon ${activeLayer} map`} />
-        <button type="button" className="explorer-reset" onClick={resetLebanon}><RotateCcw size={14} />Full Lebanon</button>
         {boundaryError && <div className="explorer-map-message" role="alert"><MapPinned size={25} /><strong>Boundary map unavailable</strong><span>Source information remains accessible.</span></div>}
         {activeLayer === "soil" && soilStatus === "loading" && <div className="explorer-map-loading" role="status"><LoaderCircle size={18} className="spin" />Loading published soil polygons</div>}
         {activeLayer === "soil" && soilStatus === "error" && <div className="explorer-map-message" role="alert"><Info size={22} /><strong>Soil service unavailable</strong><span>The live AUB-hosted layer could not be reached.</span><button type="button" onClick={() => void loadSoils()}>Retry</button></div>}

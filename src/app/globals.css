@@ -786,8 +786,6 @@ h1,h2,h3,h4,h5,h6,.footer-brand,.footer-cta>span,.atlas-tooltip strong,.map-tool
 .lebanon-explorer .leaflet-control-attribution{z-index:5;padding:3px 7px!important;color:#627780!important;background:rgba(255,255,255,.88)!important;font-size:7px!important}
 .explorer-map-heading{position:absolute;z-index:5;left:20px;right:20px;top:17px;padding-bottom:13px;display:flex;align-items:end;justify-content:space-between;gap:20px;color:#fff;border-bottom:1px solid rgba(255,255,255,.18);pointer-events:none}
 .explorer-map-heading div{display:flex;flex-direction:column}.explorer-map-heading span{color:#96bcc9;font-size:7px;font-weight:800;letter-spacing:.18em;text-transform:uppercase}.explorer-map-heading strong{margin-top:4px;font:400 19px/1.1 Georgia,"Times New Roman",serif}.explorer-map-heading p{max-width:330px;margin:0;color:#bfd0d5;font-size:8px;line-height:1.45;text-align:right}
-.explorer-reset{position:absolute;z-index:6;left:18px;bottom:29px;height:34px;padding:0 12px;display:flex;align-items:center;gap:7px;color:#153b49;background:rgba(255,255,255,.94);border:0;border-radius:3px;box-shadow:0 8px 22px rgba(3,22,31,.2);font-size:8px;font-weight:750;cursor:pointer}
-.explorer-reset:hover,.explorer-reset:focus-visible{color:#fff;background:var(--layer-accent);outline:0}
 .agriculture-metric-toggle{position:absolute;z-index:7;top:83px;left:18px;padding:4px;display:flex;gap:3px;background:rgba(255,255,255,.94);border-radius:3px;box-shadow:0 8px 22px rgba(3,22,31,.18)}
 .agriculture-metric-toggle button{height:31px;padding:0 10px;color:#5f7378;background:transparent;border:0;border-radius:2px;font-size:7.5px;font-weight:750;cursor:pointer}
 .agriculture-metric-toggle button.active{color:#fff;background:#397c56}
@@ -830,7 +828,7 @@ h1,h2,h3,h4,h5,h6,.footer-brand,.footer-cta>span,.atlas-tooltip strong,.map-tool
   .lebanon-explorer .leaflet-control-zoom{margin:74px 0 0 12px!important}
   .agriculture-metric-toggle{top:69px;left:55px;right:12px;overflow-x:auto}.agriculture-metric-toggle button{flex:1;white-space:nowrap}
   .explorer-legend{left:12px;right:12px;bottom:47px;width:auto;padding:11px}.explorer-legend.soil{width:auto;max-height:168px}.explorer-legend.soil>div:last-child{grid-template-columns:repeat(3,1fr)}
-  .explorer-reset{left:12px;bottom:12px}.explorer-map-source{right:12px;bottom:18px}
+  .explorer-map-source{right:12px;bottom:18px}
   .explorer-detail{padding:21px 17px}.explorer-detail header h3{font-size:21px}.explorer-primary-stat>strong{font-size:34px}
   .explorer-national-stats{grid-template-columns:1fr 1fr}.explorer-national-stats>div{min-height:70px;padding:13px}.explorer-national-stats>div:nth-child(3){border-left:0;border-top:1px solid #e1e7e5}.explorer-national-stats>div:nth-child(4){border-top:1px solid #e1e7e5}.explorer-national-stats strong{font-size:15px}
 }
