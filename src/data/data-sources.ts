@@ -35,6 +35,17 @@ export const EXPLORER_SOURCES = {
     transformation: "AQUALEB georeferences and digitizes Figure 3. Displays retain the published band; calculations use the midpoint of closed bands and 1,400 mm as the conservative lower bound of the >1,400 band.",
     status: "derived",
   },
+  rivers: {
+    institution: "Fanack Water",
+    dataset: "Major rivers in Lebanon",
+    year: "2022",
+    url: "https://water.fanack.com/lebanon/water-resources-in-lebanon/",
+    methodology: "Published reference map showing Lebanon's named rivers and distinguishing perennial from intermittent waterways.",
+    geographicResolution: "National reference map",
+    administrativeLimitations: "The map is illustrative and is not a live hydrological network or a source of current river-flow measurements.",
+    transformation: "AQUALEB reproduces the supplied Fanack Water map without altering its labels or classifications.",
+    status: "published",
+  },
   soil: {
     institution: "CNRS Lebanon – Remote Sensing Center",
     dataset: "Detailed Soil Map of Lebanon",

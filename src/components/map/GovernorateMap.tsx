@@ -1,9 +1,10 @@
 "use client";
 
+import Image from "next/image";
 import { useCallback, useEffect, useRef, useState } from "react";
 import type { Feature, FeatureCollection, Geometry } from "geojson";
 import type { GeoJSON as LeafletGeoJSON, ImageOverlay, LatLngBounds, Layer, LeafletMouseEvent, Map as LeafletMap } from "leaflet";
-import { Droplets, ExternalLink, Info, Layers3, Leaf, LoaderCircle, MapPinned, Sprout } from "lucide-react";
+import { Droplets, ExternalLink, Info, Layers3, Leaf, LoaderCircle, MapPinned, Sprout, Waves } from "lucide-react";
 import { AGRICULTURE_BY_GOVERNORATE, AGRICULTURE_CENSUS_SOURCE, AGRICULTURE_NATIONAL_TOTALS, AGRICULTURE_NO_DATA_COLOR, agricultureColor, agricultureLegend, agricultureValue, type AgricultureMetric } from "@/data/agriculture";
 import { EXPLORER_SOURCES, type DataSourceMetadata } from "@/data/data-sources";
 import { BOUNDARY_SOURCE, geoJsonNameToDataKey, GOVERNORATES, type GovernorateKey } from "@/data/governorate-water";
@@ -11,16 +12,37 @@ import { getRainfallAtCoordinate, RAINFALL_MAP_BOUNDS, RAINFALL_MAP_OVERLAY, RAI
 import { SOIL_CLASS_COLORS, SOIL_CLASS_ORDER, SOIL_LAYER_URL, soilColor, type SoilProperties } from "@/data/soil";
 import { findGovernorateKeyAtPoint, type GovernorateBoundaryProperties } from "@/lib/geo";
 
-type ExplorerLayer = "water" | "soil" | "agriculture";
+type ExplorerLayer = "water" | "rivers" | "soil" | "agriculture";
 type GovernorateProperties = GovernorateBoundaryProperties;
 type SoilFeature = Feature<Geometry, SoilProperties>;
 type StyledLayer = Layer & { setStyle: (style: Record<string, unknown>) => void; bringToFront: () => void; getElement?: () => SVGPathElement; feature?: SoilFeature };
 
 const LAYER_OPTIONS: { key: ExplorerLayer; label: string; description: string; icon: typeof Droplets }[] = [
   { key: "water", label: "Water Resources", description: "Published annual precipitation", icon: Droplets },
+  { key: "rivers", label: "Rivers", description: "Major perennial and intermittent rivers", icon: Waves },
   { key: "soil", label: "Soil Types", description: "CNRS mapped classifications", icon: Layers3 },
   { key: "agriculture", label: "Agricultural Land", description: "Official 2010/11 census", icon: Leaf },
 ];
+
+const RIVER_GUIDE = [
+  ["El Kabir", "Runs along part of Lebanon's northern border before reaching the Mediterranean."],
+  ["Ostuene", "A short northern waterway flowing west through the Akkar region."],
+  ["Arka", "An Akkar-area river that drains toward Lebanon's northern coast."],
+  ["El Bared", "Flows from North Lebanon to the Mediterranean north of Tripoli."],
+  ["Abou Ali", "Descends from the northern mountains and passes through Tripoli."],
+  ["El Jaouz", "Crosses the Batroun area before reaching the Mediterranean coast."],
+  ["Ibrahim", "Flows from Mount Lebanon toward the coast near Jbeil–Byblos."],
+  ["El Kalb", "Reaches the Mediterranean on the Keserwan coast north of Beirut."],
+  ["Beirut", "A short coastal river running along the eastern edge of Beirut."],
+  ["Damour", "Crosses the Chouf area and reaches the coast south of Beirut."],
+  ["El Awali", "Flows from the mountains to the Mediterranean north of Sidon."],
+  ["Sainiq", "A small coastal river entering the sea immediately south of Sidon."],
+  ["El Zahrani", "Reaches the southern coast between Sidon and Tyre."],
+  ["Abou Assouad", "A short South Lebanon river draining toward the Mediterranean."],
+  ["Litani", "Lebanon's longest river, flowing south through the Bekaa then west to the sea."],
+  ["Hasbani", "A southeastern river that forms part of the Jordan River headwaters."],
+  ["El Assi", "Rises in north-eastern Lebanon and flows north into Syria."],
+] as const;
 
 function sourceStatus(source: DataSourceMetadata) {
   if (source.status === "official") return "Official data";
@@ -39,29 +61,32 @@ function governorateTooltip(key: GovernorateKey, layer: ExplorerLayer, metric: A
 }
 
 function GovernorateDetails({ activeLayer, selectedKey, selectedSoil, selectedRainfall, rainfallPoint }: { activeLayer: ExplorerLayer; selectedKey: GovernorateKey | null; selectedSoil: SoilProperties | null; selectedRainfall: LocationRainfall | null; rainfallPoint: { lat: number; lng: number } | null }) {
-  const source = activeLayer === "water" ? EXPLORER_SOURCES.rainfall : activeLayer === "soil" ? EXPLORER_SOURCES.soil : AGRICULTURE_CENSUS_SOURCE;
+  const source = activeLayer === "water" ? EXPLORER_SOURCES.rainfall : activeLayer === "rivers" ? EXPLORER_SOURCES.rivers : activeLayer === "soil" ? EXPLORER_SOURCES.soil : AGRICULTURE_CENSUS_SOURCE;
   const governorate = selectedKey ? GOVERNORATES[selectedKey] : null;
   const agriculture = selectedKey ? AGRICULTURE_BY_GOVERNORATE[selectedKey] : null;
-  const hasSelection = activeLayer === "water" ? Boolean(rainfallPoint) : Boolean(governorate || selectedSoil);
+  const hasSelection = activeLayer === "rivers" || (activeLayer === "water" ? Boolean(rainfallPoint) : Boolean(governorate || selectedSoil));
 
   return <aside className={`explorer-detail explorer-detail-${activeLayer}`} aria-live="polite">
-    <header><span><MapPinned size={18} /></span><div><p>{activeLayer === "water" ? "Selected coordinate" : activeLayer === "soil" && selectedSoil ? "Selected soil polygon" : "Selected governorate"}</p><h3>{activeLayer === "water" ? governorate?.name ?? "Select a location" : activeLayer === "soil" && selectedSoil ? selectedSoil.soil_class || "Unclassified soil" : governorate?.name ?? "Select a governorate"}</h3>{activeLayer === "water" && rainfallPoint ? <small>{rainfallPoint.lat.toFixed(4)}° N · {rainfallPoint.lng.toFixed(4)}° E</small> : governorate && <small>{governorate.name} · {governorate.pcode}</small>}</div></header>
+    <header><span>{activeLayer === "rivers" ? <Waves size={18} /> : <MapPinned size={18} />}</span><div><p>{activeLayer === "rivers" ? "National reference map" : activeLayer === "water" ? "Selected coordinate" : activeLayer === "soil" && selectedSoil ? "Selected soil polygon" : "Selected governorate"}</p><h3>{activeLayer === "rivers" ? "Lebanon's rivers" : activeLayer === "water" ? governorate?.name ?? "Select a location" : activeLayer === "soil" && selectedSoil ? selectedSoil.soil_class || "Unclassified soil" : governorate?.name ?? "Select a governorate"}</h3>{activeLayer === "rivers" ? <small>Perennial and intermittent waterways</small> : activeLayer === "water" && rainfallPoint ? <small>{rainfallPoint.lat.toFixed(4)}° N · {rainfallPoint.lng.toFixed(4)}° E</small> : governorate && <small>{governorate.name} · {governorate.pcode}</small>}</div></header>
     {!hasSelection ? <div className="explorer-detail-empty"><strong>Explore the map</strong><p>{activeLayer === "water" ? "Click anywhere inside Lebanon to inspect the published rainfall band at that coordinate." : "Choose any governorate to inspect its supported data, source, period and status."}</p></div> : <div key={`${activeLayer}-${selectedKey ?? "none"}-${selectedSoil?.objectid ?? "none"}-${rainfallPoint?.lat ?? "none"}`} className="explorer-detail-content">
       {activeLayer === "water" && rainfallPoint && <>{selectedRainfall ? <><section className="explorer-primary-stat"><span>Annual precipitation band</span><strong>{selectedRainfall.label} <small>mm/year</small></strong><p>Published spatial band at the selected coordinate</p></section><dl className="explorer-data-grid"><div><dt>Calculation value</dt><dd>{selectedRainfall.annualMm.toLocaleString()} mm/year</dd></div><div><dt>Calculation basis</dt><dd>{selectedRainfall.calculationBasis}</dd></div><div><dt>Reference</dt><dd>VertigO Figure 3 · 2023</dd></div><div><dt>Underlying atlas</dt><dd>Atlas climatique du Liban · 1977</dd></div></dl></> : <section className="explorer-primary-stat"><span>Annual precipitation</span><strong className="unavailable">Outside mapped zones</strong><p>No rainfall band was digitized at this coordinate.</p></section>}</>}
+      {activeLayer === "rivers" && <><section className="explorer-primary-stat"><span>Surface-water network</span><p>These are the waterways identified by name on the supplied map. Solid and dashed lines distinguish perennial and intermittent rivers.</p><div className="river-mini-guide" aria-label="Short descriptions of the major rivers shown on the map">{RIVER_GUIDE.map(([name, description]) => <div key={name}><b>{name}</b><small>{description}</small></div>)}</div></section><dl className="explorer-data-grid"><div><dt>Longest river</dt><dd>Litani · 170 km</dd></div><div><dt>Litani basin</dt><dd>About 2,180 km²</dd></div><div><dt>Map publisher</dt><dd>Fanack Water</dd></div><div><dt>Coverage</dt><dd>National reference map</dd></div></dl></>}
       {activeLayer === "agriculture" && governorate && <>{agriculture ? <div className="agriculture-detail-values"><section><span>Utilized agricultural area</span><strong>{agriculture.utilizedAgriculturalAreaHa.toLocaleString()} <small>ha</small></strong></section><section><span>Irrigated area</span><strong>{agriculture.irrigatedAreaHa.toLocaleString()} <small>ha</small></strong></section></div> : <section className="explorer-primary-stat"><span>Agricultural census</span><strong className="unavailable">Not reported</strong><p>No value is assigned to {governorate.name} in the supplied governorate table.</p></section>}<dl className="explorer-data-grid"><div><dt>Reference period</dt><dd>2010/11</dd></div><div><dt>Unit</dt><dd>Hectares</dd></div><div><dt>Institution</dt><dd>Ministry of Agriculture / FAO</dd></div><div><dt>Status</dt><dd>Official census</dd></div></dl></>}
       {activeLayer === "soil" && <>{selectedSoil ? <><section className="explorer-primary-stat"><span>Published soil class</span><strong>{selectedSoil.soil_class || "Unclassified"}</strong><p>Mapped polygon · not a governorate-wide classification</p></section><dl className="explorer-data-grid">{selectedSoil.soil_group && <div><dt>Soil group</dt><dd>{selectedSoil.soil_group}</dd></div>}{selectedSoil.soil_unit && <div><dt>Soil unit</dt><dd>{selectedSoil.soil_unit}</dd></div>}{selectedSoil.code2 && <div><dt>Published code</dt><dd>{selectedSoil.code2}</dd></div>}<div><dt>Map scale</dt><dd>1:50,000</dd></div></dl></> : <section className="explorer-primary-stat"><span>Soil classifications</span><strong className="unavailable">Select a polygon</strong><p>Choose a colored soil polygon to inspect its published attributes.</p></section>}</>}
-      <div className={`explorer-source-status status-${source.status}`}>{sourceStatus(source)}</div>
+      {activeLayer !== "rivers" && <div className={`explorer-source-status status-${source.status}`}>{sourceStatus(source)}</div>}
     </div>}
   </aside>;
 }
 
 function NationalSummary({ activeLayer, agricultureMetric }: { activeLayer: ExplorerLayer; agricultureMetric: AgricultureMetric }) {
   if (activeLayer === "agriculture") return <div className="explorer-national-stats" key={`${activeLayer}-${agricultureMetric}`}><div><strong>{AGRICULTURE_NATIONAL_TOTALS.utilizedAgriculturalAreaHa.toLocaleString()} ha</strong><span>Utilized agricultural area</span></div><div><strong>{AGRICULTURE_NATIONAL_TOTALS.irrigatedAreaHa.toLocaleString()} ha</strong><span>Irrigated area</span></div><div><strong>7</strong><span>Census governorate groupings</span></div><div><strong>2010/11</strong><span>Official census</span></div></div>;
+  if (activeLayer === "rivers") return <div className="explorer-national-stats" key={activeLayer}><div><strong>40 rivers</strong><span>Reported across Lebanon</span></div><div><strong>16 perennial</strong><span>Year-round waterways</span></div><div><strong>170 km</strong><span>Litani River length</span></div><div><strong>Fanack Water</strong><span>Published reference map</span></div></div>;
   if (activeLayer === "soil") return <div className="explorer-national-stats" key={activeLayer}><div><strong>{SOIL_CLASS_ORDER.length}</strong><span>Published map classes</span></div><div><strong>1:50,000</strong><span>Map scale</span></div><div><strong>27</strong><span>Source map sheets</span></div><div><strong>CNRS</strong><span>Remote Sensing Center</span></div></div>;
   return <div className="explorer-national-stats" key={activeLayer}><div><strong>13 bands</strong><span>Published rainfall classes</span></div><div><strong>200–&gt;1,400</strong><span>mm/year range</span></div><div><strong>Figure 3</strong><span>VertigO 2023 publication</span></div><div><strong>1977 atlas</strong><span>Underlying climate data</span></div></div>;
 }
 
 export function GovernorateMap() {
+  const basePath = process.env.NEXT_PUBLIC_BASE_PATH ?? "";
   const mapElement = useRef<HTMLDivElement>(null);
   const mapRef = useRef<LeafletMap | null>(null);
   const boundsRef = useRef<LatLngBounds | null>(null);
@@ -210,8 +235,8 @@ export function GovernorateMap() {
     });
   }, [selectedKey, selectedSoil]);
 
-  const layerDescription = activeLayer === "water" ? "Mean annual rainfall bands at coordinate level" : activeLayer === "soil" ? "Published CNRS soil classifications and spatial distribution" : "Official utilized and irrigated agricultural area";
-  const activeSource = activeLayer === "water" ? EXPLORER_SOURCES.rainfall : activeLayer === "soil" ? EXPLORER_SOURCES.soil : AGRICULTURE_CENSUS_SOURCE;
+  const layerDescription = activeLayer === "water" ? "Mean annual rainfall bands at coordinate level" : activeLayer === "rivers" ? "Published map of major perennial and intermittent rivers" : activeLayer === "soil" ? "Published CNRS soil classifications and spatial distribution" : "Official utilized and irrigated agricultural area";
+  const activeSource = activeLayer === "water" ? EXPLORER_SOURCES.rainfall : activeLayer === "rivers" ? EXPLORER_SOURCES.rivers : activeLayer === "soil" ? EXPLORER_SOURCES.soil : AGRICULTURE_CENSUS_SOURCE;
 
   return <div className={`lebanon-explorer layer-${activeLayer}`}>
     <div className="explorer-layer-switcher" role="tablist" aria-label="Lebanon data layer">{LAYER_OPTIONS.map(({ key, label, description, icon: Icon }) => <button type="button" role="tab" aria-selected={activeLayer === key} className={activeLayer === key ? "active" : ""} key={key} onClick={() => setActiveLayer(key)}><span><Icon size={18} /></span><span><strong>{label}</strong><small>{description}</small></span></button>)}</div>
@@ -220,6 +245,7 @@ export function GovernorateMap() {
         <div className="explorer-map-heading"><div><span>Active layer</span><strong>{LAYER_OPTIONS.find((item) => item.key === activeLayer)?.label}</strong></div><p>{layerDescription}</p></div>
         {activeLayer === "agriculture" && <div className="agriculture-metric-toggle" role="group" aria-label="Agriculture metric"><button type="button" className={agricultureMetric === "uaa" ? "active" : ""} onClick={() => setAgricultureMetric("uaa")}>Utilized Agricultural Area</button><button type="button" className={agricultureMetric === "irrigated" ? "active" : ""} onClick={() => setAgricultureMetric("irrigated")}>Irrigated Area</button></div>}
         <div ref={mapElement} className="explorer-leaflet-map" aria-label={`Interactive Lebanon ${activeLayer} map`} />
+        {activeLayer === "rivers" && <div className="explorer-rivers-map"><Image src={`${basePath}/lebanon-major-rivers.png`} alt="Map of Lebanon's major perennial and intermittent rivers" fill sizes="(max-width: 1050px) 100vw, 70vw" /></div>}
         {boundaryError && <div className="explorer-map-message" role="alert"><MapPinned size={25} /><strong>Boundary map unavailable</strong><span>Source information remains accessible.</span></div>}
         {activeLayer === "soil" && soilStatus === "loading" && <div className="explorer-map-loading" role="status"><LoaderCircle size={18} className="spin" />Loading published soil polygons</div>}
         {activeLayer === "soil" && soilStatus === "error" && <div className="explorer-map-message" role="alert"><Info size={22} /><strong>Soil service unavailable</strong><span>The live AUB-hosted layer could not be reached.</span><button type="button" onClick={() => void loadSoils()}>Retry</button></div>}
@@ -227,7 +253,7 @@ export function GovernorateMap() {
         {activeLayer === "water" && <div className="explorer-legend"><div className="legend-heading"><span>Mean annual rainfall</span><strong>mm/year</strong></div><div className="water-legend-ramp">{RAINFALL_SCALE.map((item) => <span key={item.label}><i style={{ background: item.color }} />{item.label}</span>)}</div><small>VertigO Figure 3 · coordinate-matched bands</small></div>}
         {activeLayer === "agriculture" && <div className="explorer-legend"><div className="legend-heading"><span>{agricultureMetric === "uaa" ? "Utilized agricultural area" : "Irrigated area"}</span><strong>hectares</strong></div><div className="agriculture-legend-ramp">{agricultureLegend(agricultureMetric).map((item, index, scale) => <span key={item.max}><i style={{ background: item.color }} />{index === 0 ? `≤ ${item.max.toLocaleString()}` : Number.isFinite(item.max) ? `≤ ${item.max.toLocaleString()}` : `> ${scale[index - 1].max.toLocaleString()}`}</span>)}</div><small><i style={{ background: AGRICULTURE_NO_DATA_COLOR }} />Not reported</small></div>}
         {activeLayer === "soil" && <div className="explorer-legend soil"><div className="legend-heading"><span>Soil Types</span><strong>Published classes</strong></div><div>{SOIL_CLASS_ORDER.map((name) => <span key={name}><i style={{ background: SOIL_CLASS_COLORS[name] }} />{name}</span>)}</div></div>}
-        <div className="explorer-map-source"><span>{activeLayer === "water" ? "Published study" : activeLayer === "soil" ? `${soilCount || "—"} mapped polygons` : "Official census"}</span><a href={activeSource.url} target="_blank" rel="noreferrer">View source <ExternalLink size={12} /></a></div>
+        <div className="explorer-map-source"><span>{activeLayer === "water" ? "Published study" : activeLayer === "rivers" ? "Published reference map" : activeLayer === "soil" ? `${soilCount || "—"} mapped polygons` : "Official census"}</span><a href={activeSource.url} target="_blank" rel="noreferrer">View source <ExternalLink size={12} /></a></div>
       </div>
       <GovernorateDetails activeLayer={activeLayer} selectedKey={selectedKey} selectedSoil={selectedSoil} selectedRainfall={selectedRainfall} rainfallPoint={rainfallPoint} />
     </div>
