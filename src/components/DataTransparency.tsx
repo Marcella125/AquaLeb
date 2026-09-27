@@ -20,12 +20,12 @@ function SourcesContent() {
 
 function MethodologyContent() {
   return <div className="transparency-methodology-list">
-    <section><h3>Data resolution</h3><p><strong>Regional data</strong> retains the geography published by its source. <strong>Governorate data</strong> describes an administrative area, not a village or property. <strong>Spatial data</strong> is returned from the mapped polygon or raster cell intersecting a selected coordinate.</p></section>
-    <section><h3>Location matching</h3><p>AQUALEB searches its GeoNames-based Lebanon gazetteer, uses the selected point coordinates, and matches that point to an OCHA governorate boundary. A place name is never treated as a parcel boundary.</p></section>
-    <section><h3>Environmental values</h3><p>Rainfall is matched to the published mean-annual-rainfall band at the selected coordinate, independent of governorate boundaries. Soil is queried from the published CNRS polygon layer at the selected coordinate. Agricultural census figures remain governorate-level and are not redistributed to villages.</p></section>
-    <section><h3>Rainwater harvesting</h3><p>The calculator combines the coordinate-matched rainfall value, the user&apos;s horizontal roof catchment area, and the selected roof-material runoff coefficient. Closed rainfall bands use their midpoint; the open &gt;1,400 mm band uses 1,400 mm as a conservative lower bound. The result is annual collection potential before tank capacity, overflow, first-flush diversion, maintenance and water-quality constraints.</p></section>
-    <section><h3>Runoff coefficients</h3><p>Material assumptions reference {ROOF_COEFFICIENT_SOURCE.publisher}&apos;s <em>{ROOF_COEFFICIENT_SOURCE.title}</em>. {ROOF_COEFFICIENT_SOURCE.note}</p></section>
-    <section><h3>Assumptions and limitations</h3><p>{EXPLORER_SOURCES.rainfall.administrativeLimitations} Band digitization and georeferencing introduce map-reading uncertainty. Annualized monthly averages are planning aids only and do not represent Lebanon&apos;s seasonal monthly rainfall distribution.</p></section>
+    <section><h3>Data resolution</h3><p><strong>Spatial data</strong> is matched at a selected coordinate. <strong>Governorate data</strong> describes an administrative area, not a village or property. Each value remains attached to the geographic resolution published by its source.</p></section>
+    <section><h3>Location matching</h3><p>AQUALEB searches its GeoNames-based Lebanon gazetteer, uses the selected point coordinates, and matches that point to the relevant mapped layer and OCHA governorate boundary. A place name is never treated as a parcel boundary.</p></section>
+    <section><h3>Rainfall</h3><p>AQUALEB uses only <em>{EXPLORER_SOURCES.rainfall.dataset}</em> from {EXPLORER_SOURCES.rainfall.institution} for annual rainfall. The selected coordinate is matched directly to its digitized rainfall band; governorate rainfall averages are not used.</p></section>
+    <section><h3>Environmental and agricultural values</h3><p>Soil is queried from the published CNRS polygon layer at the selected coordinate. Agricultural census figures and water-access indicators remain at their published governorate or survey geography and are not redistributed to villages.</p></section>
+    <section><h3>Rainwater harvesting</h3><p>Closed rainfall bands use their midpoint; the open &gt;1,400 mm/year band uses 1,400 mm/year as a conservative lower bound. The calculator combines that coordinate-matched value with roof area and the selected runoff coefficient. Material assumptions reference {ROOF_COEFFICIENT_SOURCE.publisher}&apos;s <em>{ROOF_COEFFICIENT_SOURCE.title}</em>.</p></section>
+    <section><h3>Assumptions and limitations</h3><p>{EXPLORER_SOURCES.rainfall.administrativeLimitations} Rainfall digitization and georeferencing introduce map-reading uncertainty. Annualized monthly averages are planning aids only and do not represent Lebanon&apos;s seasonal rainfall distribution.</p></section>
   </div>;
 }
 
@@ -53,8 +53,8 @@ export function DataTransparency() {
       <div className="data-transparency-inner">
         <p id="transparency-title">Data &amp; Transparency</p>
         <div className="transparency-links">
-          <button type="button" onClick={() => setView("sources")}><span>Data &amp; Sources <i>↗</i></span><small>Official datasets and institutions behind AQUALEB.</small></button>
-          <button type="button" onClick={() => setView("methodology")}><span>Methodology <i>↗</i></span><small>How the data and estimates used by AQUALEB are produced.</small></button>
+          <button type="button" onClick={() => setView("sources")}><span>Data &amp; Sources <i>↗</i></span><small>Datasets and institutions behind AQUALEB.</small></button>
+          <button type="button" onClick={() => setView("methodology")}><span>Methodology <i>↗</i></span><small>How AQUALEB matches source data and produces estimates.</small></button>
         </div>
       </div>
     </section>
